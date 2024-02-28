@@ -1,0 +1,66 @@
+#pragma version 10
+
+smart_contracts.hello_world.contract.HelloWorld.approval_program:
+    // smart_contracts/hello_world/contract.py:4
+    // class HelloWorld(ARC4Contract):
+    txn NumAppArgs
+    bz main_bare_routing@5
+    method "hello(string)string"
+    txna ApplicationArgs 0
+    match main_hello_route@2
+    err // reject transaction
+
+main_hello_route@2:
+    // smart_contracts/hello_world/contract.py:5
+    // @arc4.abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    // smart_contracts/hello_world/contract.py:4
+    // class HelloWorld(ARC4Contract):
+    txna ApplicationArgs 1
+    // smart_contracts/hello_world/contract.py:5
+    // @arc4.abimethod()
+    callsub hello
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    return
+
+main_bare_routing@5:
+    // smart_contracts/hello_world/contract.py:4
+    // class HelloWorld(ARC4Contract):
+    txn OnCompletion
+    !
+    assert // reject transaction
+    txn ApplicationID
+    !
+    assert // is creating
+    int 1
+    return
+
+
+// smart_contracts.hello_world.contract.HelloWorld.hello(name: bytes) -> bytes:
+hello:
+    // smart_contracts/hello_world/contract.py:5-6
+    // @arc4.abimethod()
+    // def hello(self, name: arc4.String) -> arc4.String:
+    proto 1 1
+    // smart_contracts/hello_world/contract.py:7
+    // return "Hello, " + name
+    frame_dig -1
+    extract 2 0
+    byte "Hello, "
+    swap
+    concat
+    dup
+    len
+    itob
+    extract 6 0
+    swap
+    concat
+    retsub

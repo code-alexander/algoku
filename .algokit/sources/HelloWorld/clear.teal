@@ -1,0 +1,7 @@
+#pragma version 10
+
+smart_contracts.hello_world.contract.HelloWorld.clear_state_program:
+    // smart_contracts/hello_world/contract.py:4
+    // class HelloWorld(ARC4Contract):
+    int 1
+    return
