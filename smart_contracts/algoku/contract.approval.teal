@@ -1,0 +1,217 @@
+#pragma version 10
+
+smart_contracts.algoku.contract.Algoku.approval_program:
+    // smart_contracts/algoku/contract.py:17
+    // class Algoku(ARC4Contract):
+    txn NumAppArgs
+    bz main_bare_routing@5
+    method "is_valid_solution(byte[])bool"
+    txna ApplicationArgs 0
+    match main_is_valid_solution_route@2
+    err // reject transaction
+
+main_is_valid_solution_route@2:
+    // smart_contracts/algoku/contract.py:18
+    // @arc4.abimethod()
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    // smart_contracts/algoku/contract.py:17
+    // class Algoku(ARC4Contract):
+    txna ApplicationArgs 1
+    extract 2 0
+    // smart_contracts/algoku/contract.py:18
+    // @arc4.abimethod()
+    callsub is_valid_solution
+    byte 0x00
+    int 0
+    uncover 2
+    setbit
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    return
+
+main_bare_routing@5:
+    // smart_contracts/algoku/contract.py:17
+    // class Algoku(ARC4Contract):
+    txn OnCompletion
+    !
+    assert // reject transaction
+    txn ApplicationID
+    !
+    assert // is creating
+    int 1
+    return
+
+
+// smart_contracts.algoku.contract.Algoku.is_valid_solution(grid: bytes) -> uint64:
+is_valid_solution:
+    // smart_contracts/algoku/contract.py:18-19
+    // @arc4.abimethod()
+    // def is_valid_solution(self, grid: Bytes) -> bool:
+    proto 1 1
+    // smart_contracts/algoku/contract.py:28
+    // ensure_budget(5000, fee_source=OpUpFeeSource.GroupCredit)
+    int 5000
+    int 0
+    callsub ensure_budget
+    // smart_contracts/algoku/contract.py:29
+    // assert grid.length == 81, "Grid must be 81 bytes long."
+    frame_dig -1
+    len
+    dup
+    int 81
+    ==
+    assert // Grid must be 81 bytes long.
+    // smart_contracts/algoku/contract.py:30
+    // rows = columns = boxes = Bytes.from_hex(GROUP)
+    byte 0x01ff01ff01ff01ff01ff01ff01ff01ff01ff
+    dupn 2
+    int 0
+
+is_valid_solution_for_header@1:
+    // smart_contracts/algoku/contract.py:31
+    // for i, byte in uenumerate(grid):
+    frame_dig 4
+    frame_dig 0
+    <
+    bz is_valid_solution_after_for@4
+    frame_dig -1
+    frame_dig 4
+    dup
+    cover 2
+    int 1
+    extract3
+    // smart_contracts/algoku/contract.py:32
+    // cell = op.btoi(byte)
+    btoi
+    swap
+    // smart_contracts/algoku/contract.py:33
+    // rows = op.setbit_bytes(rows, op.btoi(Bytes.from_hex(ROW)[i]) - cell, 0)
+    dup
+    int 1
+    +
+    byte 0x101010101010101010202020202020202020303030303030303030404040404040404040505050505050505050606060606060606060707070707070707070808080808080808080909090909090909090
+    dig 2
+    dig 2
+    substring3
+    btoi
+    dig 3
+    -
+    frame_dig 3
+    swap
+    int 0
+    setbit
+    frame_bury 3
+    // smart_contracts/algoku/contract.py:35
+    // columns, op.btoi(Bytes.from_hex(COLUMN)[i]) - cell, 0
+    byte 0x102030405060708090102030405060708090102030405060708090102030405060708090102030405060708090102030405060708090102030405060708090102030405060708090102030405060708090
+    dig 2
+    dig 2
+    substring3
+    btoi
+    dig 3
+    -
+    // smart_contracts/algoku/contract.py:34-36
+    // columns = op.setbit_bytes(
+    //     columns, op.btoi(Bytes.from_hex(COLUMN)[i]) - cell, 0
+    // )
+    frame_dig 2
+    swap
+    // smart_contracts/algoku/contract.py:35
+    // columns, op.btoi(Bytes.from_hex(COLUMN)[i]) - cell, 0
+    int 0
+    // smart_contracts/algoku/contract.py:34-36
+    // columns = op.setbit_bytes(
+    //     columns, op.btoi(Bytes.from_hex(COLUMN)[i]) - cell, 0
+    // )
+    setbit
+    frame_bury 2
+    // smart_contracts/algoku/contract.py:37
+    // boxes = op.setbit_bytes(boxes, op.btoi(Bytes.from_hex(BOX)[i]) - cell, 0)
+    byte 0x101010202020303030101010202020303030101010202020303030404040505050606060404040505050606060404040505050606060707070808080909090707070808080909090707070808080909090
+    uncover 2
+    dig 2
+    substring3
+    btoi
+    uncover 2
+    -
+    frame_dig 1
+    swap
+    int 0
+    setbit
+    frame_bury 1
+    frame_bury 4
+    b is_valid_solution_for_header@1
+
+is_valid_solution_after_for@4:
+    // smart_contracts/algoku/contract.py:38
+    // return op.bitlen(rows | columns | boxes) == 0
+    frame_dig 3
+    frame_dig 2
+    b|
+    frame_dig 1
+    b|
+    bitlen
+    !
+    frame_bury 0
+    retsub
+
+
+// puyapy.ensure_budget(required_budget: uint64, fee_source: uint64) -> void:
+ensure_budget:
+    // <puya>/puyapy.py:11-17
+    proto 2 0
+    // <puya>/puyapy.py:18
+    frame_dig -2
+    int 10
+    +
+
+ensure_budget_while_top@1:
+    // <puya>/puyapy.py:19
+    frame_dig 0
+    global OpcodeBudget
+    >
+    bz ensure_budget_after_while@7
+    // <puya>/puyapy.py:20
+    itxn_begin
+    // <puya>/puyapy.py:21
+    int appl
+    itxn_field TypeEnum
+    // <puya>/puyapy.py:22
+    int DeleteApplication
+    itxn_field OnCompletion
+    // <puya>/puyapy.py:23
+    byte 0x068101
+    itxn_field ApprovalProgram
+    // <puya>/puyapy.py:24
+    byte 0x068101
+    itxn_field ClearStateProgram
+    // <puya>/puyapy.py:25-29
+    frame_dig -1
+    switch ensure_budget_switch_case_0@3 ensure_budget_switch_case_1@4
+    b ensure_budget_switch_case_next@6
+
+ensure_budget_switch_case_0@3:
+    // <puya>/puyapy.py:27
+    int 0
+    itxn_field Fee
+    b ensure_budget_switch_case_next@6
+
+ensure_budget_switch_case_1@4:
+    // <puya>/puyapy.py:29
+    global MinTxnFee
+    itxn_field Fee
+
+ensure_budget_switch_case_next@6:
+    // <puya>/puyapy.py:30
+    itxn_submit
+    b ensure_budget_while_top@1
+
+ensure_budget_after_while@7:
+    retsub

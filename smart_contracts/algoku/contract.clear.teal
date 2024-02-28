@@ -1,0 +1,7 @@
+#pragma version 10
+
+smart_contracts.algoku.contract.Algoku.clear_state_program:
+    // smart_contracts/algoku/contract.py:17
+    // class Algoku(ARC4Contract):
+    int 1
+    return
