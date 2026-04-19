@@ -6,6 +6,8 @@ import {
   givensToMask,
   gridToUint8Array,
   isValidSolution,
+  MAX_CLUES,
+  MIN_CLUES,
   parseAssetUrl,
   parsePuzzle,
   solve,
@@ -312,17 +314,26 @@ describe("generatePuzzle", () => {
     }
   })
 
-  it("puzzle has a plausible clue count", () => {
+  it("puzzle clue count is within [MIN_CLUES, MAX_CLUES]", () => {
     const { puzzle } = generatePuzzle()
     const clues = popcount(puzzle)
-    expect(clues).toBeGreaterThanOrEqual(17)
-    expect(clues).toBeLessThanOrEqual(80)
+    expect(clues).toBeGreaterThanOrEqual(MIN_CLUES)
+    expect(clues).toBeLessThanOrEqual(MAX_CLUES)
   })
 
-  it("harder difficulty yields fewer or equal clues", () => {
-    const easy = generatePuzzle(0)
-    const hard = generatePuzzle(1)
-    expect(popcount(hard.puzzle)).toBeLessThanOrEqual(popcount(easy.puzzle))
+  it("clue count stays within [MIN_CLUES, MAX_CLUES] across many runs", () => {
+    for (let i = 0; i < 50; i++) {
+      const { puzzle } = generatePuzzle()
+      const clues = popcount(puzzle)
+      expect(clues).toBeGreaterThanOrEqual(MIN_CLUES)
+      expect(clues).toBeLessThanOrEqual(MAX_CLUES)
+    }
+  })
+
+  it("randomises difficulty (not all puzzles share the same clue count)", () => {
+    const counts = new Set<number>()
+    for (let i = 0; i < 30; i++) counts.add(popcount(generatePuzzle().puzzle))
+    expect(counts.size).toBeGreaterThan(1)
   })
 
   it("produces distinct puzzles across calls", () => {

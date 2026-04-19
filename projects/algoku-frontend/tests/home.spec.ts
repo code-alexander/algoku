@@ -86,7 +86,7 @@ test.describe("algoku home (no wallet)", () => {
     await expect(cells.nth(b)).toHaveClass(/text-destructive/)
   })
 
-  test("dev-mode auto-solve + check surfaces the connect-a-wallet mint hint", async ({ page }) => {
+  test("auto-solve + check surfaces the connect-a-wallet mint hint", async ({ page }) => {
     // Cmd/Ctrl+Enter is wired in Home.tsx for dev only; vite dev server enables it.
     await page.keyboard.press("Control+Meta+Enter")
     // After auto-solve every cell should report a value (no ", empty" labels).

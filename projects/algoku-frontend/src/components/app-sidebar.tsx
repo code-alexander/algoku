@@ -1,5 +1,6 @@
 import { useWallet } from "@txnlab/use-wallet-react"
 import * as React from "react"
+import { useMemo } from "react"
 
 import AssetCollapsible from "@/components/AssetCollapsible"
 import {
@@ -76,11 +77,21 @@ const LeaderboardList = () => {
     return <p className="px-2 py-1 text-xs text-destructive">{query.error.message}</p>
   }
   const all = query.data ?? []
+  return <LeaderboardView all={all} activeAddress={activeAddress ?? null} />
+}
+
+const LeaderboardView = ({ all, activeAddress }: { all: LeaderboardEntry[]; activeAddress: string | null }) => {
+  const rankBySolver = useMemo(() => {
+    const m = new Map<string, number>()
+    for (let i = 0; i < all.length; i++) m.set(all[i].solver, i)
+    return m
+  }, [all])
+
   if (all.length === 0) {
     return <p className="px-2 py-1 text-xs text-muted-foreground">no mints yet.</p>
   }
   const top = all.slice(0, LEADERBOARD_TOP_N)
-  const youIdx = activeAddress ? all.findIndex((e) => e.solver === activeAddress) : -1
+  const youIdx = activeAddress ? (rankBySolver.get(activeAddress) ?? -1) : -1
   const youInTop = youIdx >= 0 && youIdx < LEADERBOARD_TOP_N
   return (
     <div className="flex flex-col gap-0.5">

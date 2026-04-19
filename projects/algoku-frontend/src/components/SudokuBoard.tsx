@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { memo, useEffect, useRef } from "react"
 
 import SudokuCell from "@/components/SudokuCell"
 
@@ -7,7 +7,7 @@ interface SudokuBoardProps {
   entries: (number | null)[]
   selectedIndex: number | null
   conflicts: ReadonlySet<number>
-  onSelect: (index: number | null) => void
+  onSelect: (index: number) => void
   onMove: (dx: number, dy: number) => void
   onSetCell: (index: number, value: number | null) => void
 }
@@ -61,7 +61,7 @@ const SudokuBoard = ({ givens, entries, selectedIndex, conflicts, onSelect, onMo
             isGiven={given !== 0}
             isSelected={selectedIndex === i}
             hasConflict={conflicts.has(i)}
-            onSelect={() => onSelect(i)}
+            onSelect={onSelect}
           />
         )
       })}
@@ -69,4 +69,4 @@ const SudokuBoard = ({ givens, entries, selectedIndex, conflicts, onSelect, onMo
   )
 }
 
-export default SudokuBoard
+export default memo(SudokuBoard)

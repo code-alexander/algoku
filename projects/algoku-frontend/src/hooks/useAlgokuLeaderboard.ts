@@ -10,10 +10,17 @@ export type LeaderboardEntry = {
   count: number
 }
 
+// Cap client-side aggregation so the leaderboard stays fast as Algoku grows.
+// 1000 per page × 10 pages = up to 10k most-recently-created assets, which
+// is more than enough to find top solvers. Anything beyond that belongs
+// server-side.
+const PAGE_SIZE = 1000
+const MAX_PAGES = 10
+
 // Aggregates every algoku ASA minted by the canonical app on the current
 // network, grouping by the `reserve` field (solver address). The indexer
-// returns at most 1000 assets per page, so we paginate via next-token until
-// the stream ends.
+// returns at most 1000 assets per page; we paginate up to MAX_PAGES and
+// stop.
 export function useAlgokuLeaderboard(): UseQueryResult<LeaderboardEntry[], Error> {
   const identity = useAlgokuAppIdentity()
 
@@ -26,8 +33,8 @@ export function useAlgokuLeaderboard(): UseQueryResult<LeaderboardEntry[], Error
       const counts = new Map<string, number>()
 
       let nextToken: string | undefined
-      do {
-        const req = indexer.searchForAssets().creator(identity.appAddress).unit(ALGOKU_UNIT_NAME).limit(1000)
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const req = indexer.searchForAssets().creator(identity.appAddress).unit(ALGOKU_UNIT_NAME).limit(PAGE_SIZE)
         if (nextToken) req.nextToken(nextToken)
         const resp = await req.do()
 
@@ -38,7 +45,8 @@ export function useAlgokuLeaderboard(): UseQueryResult<LeaderboardEntry[], Error
           }
         }
         nextToken = resp.nextToken
-      } while (nextToken)
+        if (!nextToken) break
+      }
 
       return Array.from(counts, ([solver, count]) => ({ solver, count })).sort(
         (a, b) => b.count - a.count || a.solver.localeCompare(b.solver),

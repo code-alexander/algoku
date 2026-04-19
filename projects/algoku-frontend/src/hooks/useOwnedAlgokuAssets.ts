@@ -23,9 +23,9 @@ export function useOwnedAlgokuAssets(): UseQueryResult<AlgokuAsset[], Error> {
       if (holdings.length === 0) return []
 
       // For each holding, fetch params + the acfg creation tx (for roundTime)
-      // in parallel. Keep the pairs grouped so the normalized output keeps
-      // order even if one side of a pair errors — `Promise.all` would bail.
-      const pairs = await Promise.all(
+      // in parallel. Use allSettled so one flaky asset doesn't drop the rest
+      // of the sidebar — failures are logged and skipped.
+      const results = await Promise.allSettled(
         holdings.map(async (h) => {
           const [paramsResp, creationResp] = await Promise.all([
             indexer.lookupAssetByID(h.assetId).do(),
@@ -35,14 +35,22 @@ export function useOwnedAlgokuAssets(): UseQueryResult<AlgokuAsset[], Error> {
         }),
       )
 
-      const normalized: NormalizedAssetParams[] = pairs.map(({ params, roundTime }) => ({
-        assetId: params.asset.index,
-        unitName: params.asset.params.unitName ?? "",
-        url: params.asset.params.urlB64 ?? new Uint8Array(),
-        creator: params.asset.params.creator,
-        reserve: params.asset.params.reserve ?? "",
-        createdAtUnix: roundTime,
-      }))
+      const normalized: NormalizedAssetParams[] = []
+      for (const r of results) {
+        if (r.status === "rejected") {
+          console.warn("useOwnedAlgokuAssets: asset lookup failed", r.reason)
+          continue
+        }
+        const { params, roundTime } = r.value
+        normalized.push({
+          assetId: params.asset.index,
+          unitName: params.asset.params.unitName ?? "",
+          url: params.asset.params.urlB64 ?? new Uint8Array(),
+          creator: params.asset.params.creator,
+          reserve: params.asset.params.reserve ?? "",
+          createdAtUnix: roundTime,
+        })
+      }
 
       const assets = filterAlgokuAssets(normalized)
       // Most-recent-first — missing timestamps sink to the bottom.

@@ -1,6 +1,6 @@
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { useWallet } from "@txnlab/use-wallet-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { withScenarioFailures } from "@/lib/devScenario"
 import { type MintPhase, type MintState, runMintAndClaim, runResumeFromPending, runRetryClaim } from "@/lib/mintFlow"
@@ -14,14 +14,21 @@ export function useAlgoku() {
   const { transactionSigner, activeAddress } = useWallet()
   const [state, setState] = useState<MintState>({ kind: "idle" })
 
-  const algorand = useMemo(() => {
-    const client = AlgorandClient.fromConfig({
-      algodConfig: getAlgodConfigFromViteEnvironment(),
-      indexerConfig: getIndexerConfigFromViteEnvironment(),
-    })
-    if (transactionSigner) client.setDefaultSigner(transactionSigner)
-    return client
-  }, [transactionSigner])
+  // The client is config-only — rebuilding it when the signer changes would
+  // discard the MintService's deploy-cache + inflight dedup, which can drop
+  // in-flight transactions across a wallet swap.
+  const algorand = useMemo(
+    () =>
+      AlgorandClient.fromConfig({
+        algodConfig: getAlgodConfigFromViteEnvironment(),
+        indexerConfig: getIndexerConfigFromViteEnvironment(),
+      }),
+    [],
+  )
+
+  useEffect(() => {
+    if (transactionSigner) algorand.setDefaultSigner(transactionSigner)
+  }, [algorand, transactionSigner])
 
   const service: MintService | null = useMemo(() => {
     if (!activeAddress) return null

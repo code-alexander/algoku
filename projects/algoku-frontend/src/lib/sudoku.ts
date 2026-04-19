@@ -14,12 +14,26 @@ import { SudokuCreator } from "@algorithm.ts/sudoku"
 
 const creator = new SudokuCreator({ childMatrixWidth: 3 })
 
-export function generatePuzzle(difficulty = 0.5): { puzzle: Uint8Array; solution: Uint8Array } {
-  const { puzzle, solution } = creator.createSudoku(difficulty)
-  return {
-    puzzle: Uint8Array.from(puzzle, (v) => (v === -1 ? 0 : v + 1)),
-    solution: Uint8Array.from(solution, (v) => v + 1),
+export const MIN_CLUES = 17
+export const MAX_CLUES = 40
+const MAX_GENERATE_ATTEMPTS = 20
+
+// Randomises difficulty and rejects any puzzle with a clue count outside
+// [MIN_CLUES, MAX_CLUES]. The upstream library tends to overshoot MAX_CLUES for
+// low difficulty values, so retry is expected on a fraction of calls.
+export function generatePuzzle(): { puzzle: Uint8Array; solution: Uint8Array } {
+  for (let attempt = 0; attempt < MAX_GENERATE_ATTEMPTS; attempt++) {
+    const { puzzle, solution } = creator.createSudoku(Math.random())
+    let clues = 0
+    for (const v of puzzle) if (v !== -1) clues++
+    if (clues >= MIN_CLUES && clues <= MAX_CLUES) {
+      return {
+        puzzle: Uint8Array.from(puzzle, (v) => (v === -1 ? 0 : v + 1)),
+        solution: Uint8Array.from(solution, (v) => v + 1),
+      }
+    }
   }
+  throw new Error(`generatePuzzle: no puzzle with ${MIN_CLUES}-${MAX_CLUES} clues after ${MAX_GENERATE_ATTEMPTS} attempts`)
 }
 
 export function isValidSolution(grid: Uint8Array): boolean {
@@ -77,7 +91,7 @@ export function findConflicts(grid: Uint8Array): Set<number> {
   return conflicts
 }
 
-// Backtracking solver used by the dev auto-solve shortcut. Returns a filled
+// Backtracking solver used by the auto-solve shortcut. Returns a filled
 // 81-byte grid, or null if the givens are inconsistent or unsolvable.
 export function solve(givens: Uint8Array): Uint8Array | null {
   if (givens.length !== 81) return null

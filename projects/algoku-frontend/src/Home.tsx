@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useWallet } from "@txnlab/use-wallet-react"
 import { AlertTriangle, Check, CheckCircle2, ExternalLink, RefreshCw, X, XCircle } from "lucide-react"
 import { useSnackbar } from "notistack"
-import { type CSSProperties, useEffect, useMemo, useState } from "react"
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import NumberPad from "@/components/NumberPad"
@@ -13,7 +13,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Spinner } from "@/components/ui/spinner"
 import { type MintState, useAlgoku } from "@/hooks/useAlgoku"
 import { useSudokuState } from "@/hooks/useSudokuState"
-import { type PendingMint, readPendingMint } from "@/lib/pendingMint"
+import { type PendingMint, readPendingMint, subscribePendingMint } from "@/lib/pendingMint"
 import { ASSETS_QUERY_KEY } from "@/lib/queryClient"
 import { findConflicts, generatePuzzle, solve } from "@/lib/sudoku"
 import { cn } from "@/lib/utils"
@@ -38,10 +38,16 @@ const Home = () => {
 
   const selectedIsEditable = selectedIndex !== null && givens[selectedIndex] === 0
 
-  // Re-read on every state transition so we pick up the cleared record after
-  // a successful claim, and on address change so we never show another
-  // wallet's pending claim.
-  const pending = useMemo<PendingMint | null>(() => readPendingMint(activeAddress), [activeAddress, state.kind])
+  // pending is sourced from localStorage; subscribe so the banner updates
+  // exactly when the mint flow writes/clears it (same tab via notify, other
+  // tabs via the `storage` event).
+  const [pending, setPending] = useState<PendingMint | null>(() => readPendingMint(activeAddress))
+  useEffect(() => {
+    setPending(readPendingMint(activeAddress))
+    return subscribePendingMint(() => {
+      setPending(readPendingMint(activeAddress))
+    })
+  }, [activeAddress])
 
   // Once an in-flight claim hydrates from localStorage, pending recovery is
   // owned by the hook state — suppress the banner.
@@ -51,56 +57,64 @@ const Home = () => {
     activeAddress !== undefined &&
     (state.kind === "idle" || (state.kind === "error" && state.phase === "mint"))
 
-  const dismissIfTerminal = () => {
-    if (state.kind === "done" || (state.kind === "error" && state.phase === "mint")) {
+  // Handlers need to read the latest mint state without listing `state` in
+  // every useCallback dep list (which would thrash memoized children). Ref
+  // is updated synchronously each render.
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  const dismissIfTerminal = useCallback(() => {
+    const s = stateRef.current
+    if (s.kind === "done" || (s.kind === "error" && s.phase === "mint")) {
       dismiss()
     }
-  }
+  }, [dismiss])
 
-  const clearLocalCheck = () => {
-    setCheckPassed(false)
-  }
+  const handleSetCell = useCallback(
+    (index: number, value: number | null) => {
+      setConflicts((prev) => (prev.size > 0 ? new Set() : prev))
+      setCheckPassed(false)
+      dismissIfTerminal()
+      setCell(index, value)
+    },
+    [dismissIfTerminal, setCell],
+  )
 
-  const handleSetCell = (index: number, value: number | null) => {
-    if (conflicts.size > 0) setConflicts(new Set())
-    clearLocalCheck()
-    dismissIfTerminal()
-    setCell(index, value)
-  }
-
-  const handleNewPuzzle = () => {
+  const handleNewPuzzle = useCallback(() => {
     setConflicts(new Set())
-    clearLocalCheck()
+    setCheckPassed(false)
     dismissIfTerminal()
     loadPuzzle(generatePuzzle().puzzle)
-  }
+  }, [dismissIfTerminal, loadPuzzle])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setConflicts(new Set())
-    clearLocalCheck()
+    setCheckPassed(false)
     dismissIfTerminal()
     clearEntries()
-  }
+  }, [dismissIfTerminal, clearEntries])
 
-  useEffect(() => {
-    if (!import.meta.env.DEV) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.metaKey && e.ctrlKey && e.key === "Enter") {
-        e.preventDefault()
-        const solved = solve(givens)
-        if (solved) {
-          fillEntries(solved)
-          setConflicts(new Set())
-          clearLocalCheck()
-          dismissIfTerminal()
-        } else {
-          enqueueSnackbar("could not solve current puzzle", { variant: "error" })
-        }
-      }
+  // Global cmd+ctrl+enter auto-solve. Handler body reads latest state/givens
+  // via ref so we subscribe once, not on every puzzle change.
+  const solveShortcutRef = useRef<(e: KeyboardEvent) => void>(() => {})
+  solveShortcutRef.current = (e: KeyboardEvent) => {
+    if (!(e.metaKey && e.ctrlKey && e.key === "Enter")) return
+    e.preventDefault()
+    const solved = solve(givens)
+    if (!solved) {
+      enqueueSnackbar("could not solve current puzzle", { variant: "error" })
+      return
     }
-    document.addEventListener("keydown", handler)
-    return () => document.removeEventListener("keydown", handler)
-  }, [givens, fillEntries, enqueueSnackbar])
+    fillEntries(solved)
+    setConflicts(new Set())
+    setCheckPassed(false)
+    dismissIfTerminal()
+  }
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => solveShortcutRef.current(e)
+    document.addEventListener("keydown", listener)
+    return () => document.removeEventListener("keydown", listener)
+  }, [])
 
   // Refresh owned-assets cache after a successful claim so the sidebar updates.
   useEffect(() => {
@@ -109,7 +123,7 @@ const Home = () => {
     }
   }, [state.kind, activeAddress, queryClient])
 
-  const handleCheck = () => {
+  const handleCheck = useCallback(() => {
     const grid = toSolution()
     const found = findConflicts(grid)
     if (found.size > 0) {
@@ -119,23 +133,34 @@ const Home = () => {
     }
     setConflicts(new Set())
     setCheckPassed(isFull)
-  }
+  }, [toSolution, isFull])
 
-  const handleMint = () => {
+  const handleMint = useCallback(() => {
     void mintAndClaim(givens, toSolution())
-  }
+  }, [mintAndClaim, givens, toSolution])
 
-  const handleRetryClaim = () => {
+  const handleRetryClaim = useCallback(() => {
     void retryClaim()
-  }
+  }, [retryClaim])
 
-  const handleResume = () => {
+  const handleResume = useCallback(() => {
     if (pending) void resumeFromPending(pending)
-  }
+  }, [pending, resumeFromPending])
 
-  const handleDiscardPending = () => {
+  const handleDiscardPending = useCallback(() => {
     dismiss({ clearPending: true })
-  }
+  }, [dismiss])
+
+  const handleDismissError = useCallback(() => {
+    dismiss()
+  }, [dismiss])
+
+  const handleNumberPress = useCallback(
+    (v: number | null) => {
+      if (selectedIndex !== null) handleSetCell(selectedIndex, v)
+    },
+    [selectedIndex, handleSetCell],
+  )
 
   return (
     <SidebarProvider
@@ -160,7 +185,7 @@ const Home = () => {
             onSetCell={handleSetCell}
           />
 
-          <NumberPad onPress={(v) => selectedIndex !== null && handleSetCell(selectedIndex, v)} disabled={!selectedIsEditable} />
+          <NumberPad onPress={handleNumberPress} disabled={!selectedIsEditable} />
 
           <div className="flex w-full gap-2">
             <Button variant="outline" onClick={handleNewPuzzle} disabled={busy} className="flex-1">
@@ -193,7 +218,7 @@ const Home = () => {
             onRetryClaim={handleRetryClaim}
             onResume={handleResume}
             onDiscardPending={handleDiscardPending}
-            onDismissError={() => dismiss()}
+            onDismissError={handleDismissError}
           />
         </main>
       </SidebarInset>

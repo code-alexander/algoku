@@ -22,6 +22,32 @@ function storage(): Storage | null {
   }
 }
 
+const listeners = new Set<() => void>()
+let storageListenerAttached = false
+
+function attachStorageListener() {
+  if (storageListenerAttached) return
+  if (typeof window === "undefined") return
+  window.addEventListener("storage", (e) => {
+    if (!e.key || e.key.startsWith(KEY_PREFIX)) notify()
+  })
+  storageListenerAttached = true
+}
+
+function notify() {
+  for (const cb of listeners) cb()
+}
+
+// Subscribe to pending-mint changes. Fires on same-tab writes (via notify)
+// and other-tab writes (via the `storage` event).
+export function subscribePendingMint(cb: () => void): () => void {
+  attachStorageListener()
+  listeners.add(cb)
+  return () => {
+    listeners.delete(cb)
+  }
+}
+
 export function readPendingMint(address: string | null | undefined): PendingMint | null {
   if (!address) return null
   const ls = storage()
@@ -53,6 +79,7 @@ export function writePendingMint(address: string, pending: PendingMint): void {
   } catch {
     // Quota / private mode — recovery just won't survive a refresh.
   }
+  notify()
 }
 
 export function clearPendingMint(address: string | null | undefined): void {
@@ -64,4 +91,5 @@ export function clearPendingMint(address: string | null | undefined): void {
   } catch {
     // ignore
   }
+  notify()
 }

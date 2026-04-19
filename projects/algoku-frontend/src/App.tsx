@@ -1,9 +1,11 @@
 import { SupportedWallet, WalletId, WalletManager, WalletProvider } from "@txnlab/use-wallet-react"
 import { SnackbarProvider } from "notistack"
+import { lazy, Suspense, useMemo } from "react"
 
-import DevScenarioPanel from "@/components/DevScenarioPanel"
 import Home from "@/Home"
 import { getAlgodConfigFromViteEnvironment, getKmdConfigFromViteEnvironment } from "@/utils/network/getAlgoClientConfigs"
+
+const DevScenarioPanel = lazy(() => import("@/components/DevScenarioPanel"))
 
 let supportedWallets: SupportedWallet[]
 if (import.meta.env.VITE_ALGOD_NETWORK === "localnet") {
@@ -31,28 +33,36 @@ if (import.meta.env.VITE_ALGOD_NETWORK === "localnet") {
 export default function App() {
   const algodConfig = getAlgodConfigFromViteEnvironment()
 
-  const walletManager = new WalletManager({
-    wallets: supportedWallets,
-    defaultNetwork: algodConfig.network,
-    networks: {
-      [algodConfig.network]: {
-        algod: {
-          baseServer: algodConfig.server,
-          port: algodConfig.port,
-          token: String(algodConfig.token),
+  const walletManager = useMemo(
+    () =>
+      new WalletManager({
+        wallets: supportedWallets,
+        defaultNetwork: algodConfig.network,
+        networks: {
+          [algodConfig.network]: {
+            algod: {
+              baseServer: algodConfig.server,
+              port: algodConfig.port,
+              token: String(algodConfig.token),
+            },
+          },
         },
-      },
-    },
-    options: {
-      resetNetwork: true,
-    },
-  })
+        options: {
+          resetNetwork: true,
+        },
+      }),
+    [algodConfig.network, algodConfig.server, algodConfig.port, algodConfig.token],
+  )
 
   return (
     <SnackbarProvider maxSnack={3}>
       <WalletProvider manager={walletManager}>
         <Home />
-        {import.meta.env.DEV ? <DevScenarioPanel /> : null}
+        {import.meta.env.DEV ? (
+          <Suspense fallback={null}>
+            <DevScenarioPanel />
+          </Suspense>
+        ) : null}
       </WalletProvider>
     </SnackbarProvider>
   )

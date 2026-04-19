@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
 export type Theme = "dark" | "light" | "system"
 
@@ -16,29 +16,48 @@ interface ThemeProviderState {
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined)
 
+function readStoredTheme(storageKey: string, defaultTheme: Theme): Theme {
+  try {
+    return (localStorage.getItem(storageKey) as Theme | null) ?? defaultTheme
+  } catch {
+    return defaultTheme
+  }
+}
+
 export function ThemeProvider({ children, defaultTheme = "system", storageKey = "algoku-theme" }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => (localStorage.getItem(storageKey) as Theme | null) ?? defaultTheme)
+  const [theme, setThemeState] = useState<Theme>(() => readStoredTheme(storageKey, defaultTheme))
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark")
 
   useEffect(() => {
     const root = window.document.documentElement
-    root.classList.remove("light", "dark")
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
 
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-    const active = theme === "system" ? systemTheme : theme
+    const apply = () => {
+      const active = theme === "system" ? (media.matches ? "dark" : "light") : theme
+      root.classList.remove("light", "dark")
+      root.classList.add(active)
+      setResolvedTheme(active)
+    }
 
-    root.classList.add(active)
-    setResolvedTheme(active)
+    apply()
+    if (theme !== "system") return
+    media.addEventListener("change", apply)
+    return () => media.removeEventListener("change", apply)
   }, [theme])
 
-  const value: ThemeProviderState = {
-    theme,
-    resolvedTheme,
-    setTheme: (next: Theme) => {
-      localStorage.setItem(storageKey, next)
+  const setTheme = useCallback(
+    (next: Theme) => {
+      try {
+        localStorage.setItem(storageKey, next)
+      } catch {
+        // quota / private mode — just persist in memory
+      }
       setThemeState(next)
     },
-  }
+    [storageKey],
+  )
+
+  const value = useMemo<ThemeProviderState>(() => ({ theme, resolvedTheme, setTheme }), [theme, resolvedTheme, setTheme])
 
   return <ThemeProviderContext.Provider value={value}>{children}</ThemeProviderContext.Provider>
 }
