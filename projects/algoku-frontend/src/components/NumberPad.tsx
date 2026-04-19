@@ -9,7 +9,7 @@ interface NumberPadProps {
 
 const NumberPad = ({ onPress, disabled }: NumberPadProps) => {
   return (
-    <div className="grid w-full max-w-md grid-cols-10 gap-1">
+    <div className="grid w-full max-w-md grid-cols-10 gap-1 lg:max-w-lg xl:max-w-xl">
       {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
         <Button
           key={n}

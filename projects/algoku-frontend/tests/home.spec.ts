@@ -88,7 +88,7 @@ test.describe("algoku home (no wallet)", () => {
 
   test("dev-mode auto-solve + check surfaces the connect-a-wallet mint hint", async ({ page }) => {
     // Cmd/Ctrl+Enter is wired in Home.tsx for dev only; vite dev server enables it.
-    await page.keyboard.press("ControlOrMeta+Enter")
+    await page.keyboard.press("Control+Meta+Enter")
     // After auto-solve every cell should report a value (no ", empty" labels).
     await expect(page.getByRole("button", { name: /, empty$/ })).toHaveCount(0)
     await page.getByRole("button", { name: "check", exact: true }).click()

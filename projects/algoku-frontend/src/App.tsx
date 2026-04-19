@@ -1,6 +1,7 @@
 import { SupportedWallet, WalletId, WalletManager, WalletProvider } from "@txnlab/use-wallet-react"
 import { SnackbarProvider } from "notistack"
 
+import DevScenarioPanel from "@/components/DevScenarioPanel"
 import Home from "@/Home"
 import { getAlgodConfigFromViteEnvironment, getKmdConfigFromViteEnvironment } from "@/utils/network/getAlgoClientConfigs"
 
@@ -51,6 +52,7 @@ export default function App() {
     <SnackbarProvider maxSnack={3}>
       <WalletProvider manager={walletManager}>
         <Home />
+        {import.meta.env.DEV ? <DevScenarioPanel /> : null}
       </WalletProvider>
     </SnackbarProvider>
   )

@@ -11,7 +11,7 @@ interface SudokuMiniProps {
 const SudokuMini = ({ puzzle, solution, className }: SudokuMiniProps) => {
   return (
     <div
-      className={cn("grid aspect-square w-full grid-cols-9 border border-foreground/40 bg-background", className)}
+      className={cn("grid aspect-square w-full grid-cols-9 overflow-hidden rounded-md border bg-background", className)}
       role="img"
       aria-label="sudoku solution preview"
     >
@@ -25,9 +25,8 @@ const SudokuMini = ({ puzzle, solution, className }: SudokuMiniProps) => {
             key={i}
             className={cn(
               "flex items-center justify-center text-[0.6rem] leading-none",
-              "border-foreground/20",
-              c % 3 === 0 && c !== 0 ? "border-l border-l-foreground/60" : "border-l",
-              r % 3 === 0 && r !== 0 ? "border-t border-t-foreground/60" : "border-t",
+              r > 0 && (r === 3 || r === 6 ? "border-t-2 border-t-border" : "border-t border-t-border"),
+              c > 0 && (c === 3 || c === 6 ? "border-l-2 border-l-border" : "border-l border-l-border"),
               isGiven ? "font-bold text-foreground" : "text-muted-foreground",
             )}
           >

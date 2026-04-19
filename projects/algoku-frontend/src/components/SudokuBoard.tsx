@@ -46,7 +46,7 @@ const SudokuBoard = ({ givens, entries, selectedIndex, conflicts, onSelect, onMo
       ref={boardRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="grid aspect-square w-full max-w-md grid-cols-9 border-2 border-foreground/70 bg-background shadow-xs outline-hidden"
+      className="grid aspect-square w-full max-w-md grid-cols-9 overflow-hidden rounded-md border bg-background shadow-xs outline-hidden lg:max-w-lg xl:max-w-xl"
       role="grid"
       aria-label="sudoku board"
     >

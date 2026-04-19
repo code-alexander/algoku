@@ -78,7 +78,7 @@ class Algoku(ARC4Contract):
 
         assert mbr_payment.receiver == Global.current_application_address, "mbr payment must be addressed to the app"
 
-        assert self.is_valid_solution(puzzle, solution), "invalid solve"
+        assert self.is_valid_solution(puzzle, solution), "invalid solution"
 
         key = op.sha256(solution.bytes)
         _existing, already_minted = op.Box.get(key)
