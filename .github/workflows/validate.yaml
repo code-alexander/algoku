@@ -1,0 +1,14 @@
+name: Pull Request validation
+
+on: [pull_request]
+
+
+jobs:
+  algoku-contracts-ci:
+    name: Run algoku-contracts validation
+    uses: ./.github/workflows/algoku-contracts-ci.yaml
+
+  algoku-frontend-ci:
+    name: Run algoku-frontend validation
+    uses: ./.github/workflows/algoku-frontend-ci.yaml
+

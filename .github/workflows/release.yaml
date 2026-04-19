@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.vscode/**'
+      - '.idea/**'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  algoku-contracts-validate:
+    name: Run algoku-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/algoku-contracts-ci.yaml
+
+  algoku-contracts-release:
+    name: Run algoku-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/algoku-contracts-cd.yaml
+    needs: algoku-contracts-validate
+
+  algoku-frontend-validate:
+    name: Run algoku-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/algoku-frontend-ci.yaml
+
+  algoku-frontend-release:
+    name: Run algoku-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/algoku-frontend-cd.yaml
+    needs: algoku-frontend-validate

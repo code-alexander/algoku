@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-/lib/
-/lib64/
+lib/
+lib64/
 parts/
 sdist/
 var/
@@ -50,6 +50,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+coverage/
 
 # Translations
 *.mo
@@ -123,6 +124,9 @@ celerybeat.pid
 .env
 .venv
 env/
+.env.*
+!.env.*.template
+!.env.template
 venv/
 ENV/
 env.bak/
@@ -156,8 +160,10 @@ dmypy.json
 cython_debug/
 
 # PyCharm
-.idea/
-!.idea/runConfigurations
+.idea
+!.idea/
+.idea/*
+!.idea/runConfigurations/
 
 # macOS
 .DS_Store
@@ -168,7 +174,7 @@ cython_debug/
 # NPM
 node_modules
 
-# Local-only sudoku puzzle corpus (tdoku dataset, ~308 MB); anchored so the
-# frontend's src/puzzles/ baked subset still gets committed.
-/puzzles/
-
+# AlgoKit
+debug_traces/
+.algokit/static-analysis/ # Replace with .algokit/static-analysis/tealer/ to enable snapshot checks in CI
+.algokit/sources
