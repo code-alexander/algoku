@@ -46,10 +46,6 @@ test:
 ci:
     just check && just test
 
-# Algoku-specific: regenerate the bundled puzzle subset from the tdoku corpus
-extract-puzzles:
-    npm run extract-puzzles
-
 # -----------------------------------------------------------------------------
 # Contract-side commands (Python / poetry)
 # -----------------------------------------------------------------------------

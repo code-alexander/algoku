@@ -1,3 +1,6 @@
+.claude/
+**/.algokit/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -167,8 +170,3 @@ cython_debug/
 
 # NPM
 node_modules
-
-# Local-only sudoku puzzle corpus (tdoku dataset, ~308 MB); anchored so the
-# frontend's src/puzzles/ baked subset still gets committed.
-/puzzles/
-
