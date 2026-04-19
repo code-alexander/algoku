@@ -1,0 +1,3 @@
+{
+  "buildCommand": "tsc && vite build"
+}
