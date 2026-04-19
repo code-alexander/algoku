@@ -174,7 +174,7 @@ const Home = () => {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center gap-4 px-4 py-8 lg:max-w-lg xl:max-w-xl">
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center gap-4 px-4 py-4 lg:max-w-lg 2xl:max-w-xl">
           <SudokuBoard
             givens={givens}
             entries={entries}
