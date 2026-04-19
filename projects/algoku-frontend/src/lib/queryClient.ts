@@ -1,5 +1,5 @@
-import { QueryClient } from "@tanstack/react-query"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
+import { QueryClient } from "@tanstack/react-query"
 
 import { deserialize, serialize } from "@/lib/jsonSerdes"
 

@@ -45,7 +45,9 @@ const AssetsPanelBody = ({ address, network }: { address: string | null; network
   }
 
   if (query.isError) {
-    return <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{query.error.message}</div>
+    return (
+      <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{query.error.message}</div>
+    )
   }
 
   const assets = query.data ?? []
