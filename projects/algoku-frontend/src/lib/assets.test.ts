@@ -30,6 +30,7 @@ function makeParams(overrides: Partial<NormalizedAssetParams> = {}): NormalizedA
     url: makeUrl(solution, mask),
     creator: "APPADDR",
     reserve: "USERADDR",
+    createdAtUnix: null,
     ...overrides,
   }
 }

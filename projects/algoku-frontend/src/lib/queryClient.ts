@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query"
 import { deserialize, serialize } from "@/lib/jsonSerdes"
 
 export const ASSETS_QUERY_KEY = "assets"
+export const LEADERBOARD_QUERY_KEY = "leaderboard"
 
 export function createQueryClient(): QueryClient {
   return new QueryClient({

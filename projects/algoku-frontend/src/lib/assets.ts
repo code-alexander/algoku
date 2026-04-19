@@ -9,6 +9,7 @@ export type AlgokuAsset = {
   solution: Uint8Array
   creator: string
   reserve: string
+  createdAtUnix: number | null
 }
 
 // Normalized shape that the IO layer (indexer hook) must produce before
@@ -20,6 +21,7 @@ export type NormalizedAssetParams = {
   url: Uint8Array
   creator: string
   reserve: string
+  createdAtUnix: number | null
 }
 
 export function tryParseAlgokuAsset(p: NormalizedAssetParams): AlgokuAsset | null {
@@ -32,6 +34,7 @@ export function tryParseAlgokuAsset(p: NormalizedAssetParams): AlgokuAsset | nul
     solution,
     creator: p.creator,
     reserve: p.reserve,
+    createdAtUnix: p.createdAtUnix,
   }
 }
 
