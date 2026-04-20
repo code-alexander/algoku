@@ -55,8 +55,8 @@ function decodeUint64BE(bytes: Uint8Array): bigint {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getBigUint64(0)
 }
 
-export function createAlgorandMintService(args: { algorand: AlgorandClient; address: string }): MintService {
-  const { algorand, address } = args
+export function createAlgorandMintService(args: { algorand: AlgorandClient; address: string; canonicalAppId?: bigint }): MintService {
+  const { algorand, address, canonicalAppId } = args
 
   let cached: { client: AlgokuClient; app: DeployedApp } | null = null
   let inflight: Promise<{ client: AlgokuClient; app: DeployedApp }> | null = null
@@ -66,17 +66,26 @@ export function createAlgorandMintService(args: { algorand: AlgorandClient; addr
     if (inflight) return inflight
     inflight = (async () => {
       const factory = new AlgokuFactory({ defaultSender: address, algorand })
-      const { appClient } = await factory.deploy({
-        onSchemaBreak: OnSchemaBreak.AppendApp,
-        onUpdate: OnUpdate.AppendApp,
-      })
-      const info = await algorand.account.getInformation(appClient.appAddress)
-      if (info.balance.microAlgo < APP_ACCOUNT_MIN_BALANCE) {
-        await algorand.send.payment({
-          sender: address,
-          receiver: appClient.appAddress,
-          amount: APP_ACCOUNT_MIN_BALANCE.microAlgo(),
+      // When a canonical app id is configured for the network (testnet/mainnet),
+      // bind to it directly. Otherwise (localnet/dev) fall back to a per-wallet
+      // factory.deploy so each developer gets their own app.
+      let appClient: AlgokuClient
+      if (canonicalAppId !== undefined) {
+        appClient = factory.getAppClientById({ appId: canonicalAppId, defaultSender: address })
+      } else {
+        const deployed = await factory.deploy({
+          onSchemaBreak: OnSchemaBreak.AppendApp,
+          onUpdate: OnUpdate.AppendApp,
         })
+        appClient = deployed.appClient
+        const info = await algorand.account.getInformation(appClient.appAddress)
+        if (info.balance.microAlgo < APP_ACCOUNT_MIN_BALANCE) {
+          await algorand.send.payment({
+            sender: address,
+            receiver: appClient.appAddress,
+            amount: APP_ACCOUNT_MIN_BALANCE.microAlgo(),
+          })
+        }
       }
       const result = {
         client: appClient,

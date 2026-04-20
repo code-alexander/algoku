@@ -2,6 +2,7 @@ import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import { useWallet } from "@txnlab/use-wallet-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+import { useAlgokuAppIdentity } from "@/hooks/useAlgokuAppIdentity"
 import { withScenarioFailures } from "@/lib/devScenario"
 import { type MintPhase, type MintState, runMintAndClaim, runResumeFromPending, runRetryClaim } from "@/lib/mintFlow"
 import { createAlgorandMintService, type MintService } from "@/lib/mintService"
@@ -12,6 +13,7 @@ export type { MintPhase, MintState } from "@/lib/mintFlow"
 
 export function useAlgoku() {
   const { transactionSigner, activeAddress } = useWallet()
+  const identity = useAlgokuAppIdentity()
   const [state, setState] = useState<MintState>({ kind: "idle" })
 
   // The client is config-only — rebuilding it when the signer changes would
@@ -32,9 +34,9 @@ export function useAlgoku() {
 
   const service: MintService | null = useMemo(() => {
     if (!activeAddress) return null
-    const real = createAlgorandMintService({ algorand, address: activeAddress })
+    const real = createAlgorandMintService({ algorand, address: activeAddress, canonicalAppId: identity?.appId })
     return import.meta.env.DEV ? withScenarioFailures(real) : real
-  }, [algorand, activeAddress])
+  }, [algorand, activeAddress, identity?.appId])
 
   const mintAndClaim = useCallback(
     async (givens: Uint8Array, solution: Uint8Array): Promise<void> => {
