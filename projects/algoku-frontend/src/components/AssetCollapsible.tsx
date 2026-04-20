@@ -22,7 +22,7 @@ const AssetCollapsible = ({ asset, network }: AssetCollapsibleProps) => {
     <Collapsible>
       <Card className="py-0">
         <CardContent className="p-0">
-          <CollapsibleTrigger className="group flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent/40">
+          <CollapsibleTrigger className="group flex w-full items-center gap-2 px-3 py-2 text-left text-sm">
             <span className="truncate font-mono text-xs">asset {asset.assetId.toString()}</span>
             <span className="ml-auto font-mono text-xs text-muted-foreground">{date}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />

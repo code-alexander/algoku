@@ -147,6 +147,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Themed scrollbar. Firefox uses `scrollbar-color`; WebKit uses pseudo-els. */
