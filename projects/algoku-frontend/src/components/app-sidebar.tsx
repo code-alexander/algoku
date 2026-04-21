@@ -20,7 +20,6 @@ import { useAlgokuAppIdentity } from "@/hooks/useAlgokuAppIdentity"
 import { type LeaderboardEntry, useAlgokuLeaderboard } from "@/hooks/useAlgokuLeaderboard"
 import { useOwnedAlgokuAssets } from "@/hooks/useOwnedAlgokuAssets"
 import { cn } from "@/lib/utils"
-import { ellipseAddress } from "@/utils/ellipseAddress"
 
 const NETWORK = import.meta.env.VITE_ALGOD_NETWORK ?? "localnet"
 
@@ -116,7 +115,7 @@ const LeaderboardRow = ({ rank, entry, isYou }: { rank: number; entry: Leaderboa
   >
     <span className="flex min-w-0 items-center gap-2">
       <span className="w-5 shrink-0 text-right text-muted-foreground">{rank}</span>
-      <span className="truncate">{ellipseAddress(entry.solver, 4)}</span>
+      <span className="truncate">{entry.solver}</span>
     </span>
     <span className="tabular-nums">{entry.count}</span>
   </div>
