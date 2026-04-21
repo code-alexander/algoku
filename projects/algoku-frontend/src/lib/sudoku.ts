@@ -18,12 +18,18 @@ export const MIN_CLUES = 17
 export const MAX_CLUES = 40
 const MAX_GENERATE_ATTEMPTS = 20
 
-// Randomises difficulty and rejects any puzzle with a clue count outside
-// [MIN_CLUES, MAX_CLUES]. The upstream library tends to overshoot MAX_CLUES for
-// low difficulty values, so retry is expected on a fraction of calls.
-export function generatePuzzle(): { puzzle: Uint8Array; solution: Uint8Array } {
+export type Difficulty = "easy" | "hard"
+
+const DIFFICULTY_RANGES: Record<Difficulty, readonly [number, number]> = {
+  easy: [0.4, 0.5],
+  hard: [0.85, 1.0],
+}
+
+export function generatePuzzle(difficulty: Difficulty): { puzzle: Uint8Array; solution: Uint8Array } {
+  const [lo, hi] = DIFFICULTY_RANGES[difficulty]
   for (let attempt = 0; attempt < MAX_GENERATE_ATTEMPTS; attempt++) {
-    const { puzzle, solution } = creator.createSudoku(Math.random())
+    const d = lo + Math.random() * (hi - lo)
+    const { puzzle, solution } = creator.createSudoku(d)
     let clues = 0
     for (const v of puzzle) if (v !== -1) clues++
     if (clues >= MIN_CLUES && clues <= MAX_CLUES) {
@@ -33,7 +39,7 @@ export function generatePuzzle(): { puzzle: Uint8Array; solution: Uint8Array } {
       }
     }
   }
-  throw new Error(`generatePuzzle: no puzzle with ${MIN_CLUES}-${MAX_CLUES} clues after ${MAX_GENERATE_ATTEMPTS} attempts`)
+  throw new Error(`generatePuzzle: no ${difficulty} puzzle with ${MIN_CLUES}-${MAX_CLUES} clues after ${MAX_GENERATE_ATTEMPTS} attempts`)
 }
 
 export function isValidSolution(grid: Uint8Array): boolean {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  type Difficulty,
   findConflicts,
   generatePuzzle,
   givensToMask,
@@ -293,59 +294,66 @@ describe("parseAssetUrl", () => {
   })
 })
 
-describe("generatePuzzle", () => {
-  const popcount = (arr: Uint8Array): number => arr.reduce((n, v) => n + (v !== 0 ? 1 : 0), 0)
+const popcount = (arr: Uint8Array): number => arr.reduce((n, v) => n + (v !== 0 ? 1 : 0), 0)
+const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
 
+describe.each<Difficulty>(["easy", "hard"])("generatePuzzle(%s)", (difficulty) => {
   it("returns an 81-byte puzzle and solution", () => {
-    const { puzzle, solution } = generatePuzzle()
+    const { puzzle, solution } = generatePuzzle(difficulty)
     expect(puzzle).toHaveLength(81)
     expect(solution).toHaveLength(81)
   })
 
   it("solution is a valid sudoku", () => {
-    const { solution } = generatePuzzle()
+    const { solution } = generatePuzzle(difficulty)
     expect(isValidSolution(solution)).toBe(true)
   })
 
   it("puzzle cells are 0 (empty) or match solution", () => {
-    const { puzzle, solution } = generatePuzzle()
+    const { puzzle, solution } = generatePuzzle(difficulty)
     for (let i = 0; i < 81; i++) {
       expect(puzzle[i] === 0 || puzzle[i] === solution[i]).toBe(true)
     }
   })
 
-  it("puzzle clue count is within [MIN_CLUES, MAX_CLUES]", () => {
-    const { puzzle } = generatePuzzle()
-    const clues = popcount(puzzle)
-    expect(clues).toBeGreaterThanOrEqual(MIN_CLUES)
-    expect(clues).toBeLessThanOrEqual(MAX_CLUES)
-  })
-
   it("clue count stays within [MIN_CLUES, MAX_CLUES] across many runs", () => {
     for (let i = 0; i < 50; i++) {
-      const { puzzle } = generatePuzzle()
+      const { puzzle } = generatePuzzle(difficulty)
       const clues = popcount(puzzle)
       expect(clues).toBeGreaterThanOrEqual(MIN_CLUES)
       expect(clues).toBeLessThanOrEqual(MAX_CLUES)
     }
   })
 
-  it("randomises difficulty (not all puzzles share the same clue count)", () => {
+  it("produces varied clue counts across calls", () => {
     const counts = new Set<number>()
-    for (let i = 0; i < 30; i++) counts.add(popcount(generatePuzzle().puzzle))
+    for (let i = 0; i < 30; i++) counts.add(popcount(generatePuzzle(difficulty).puzzle))
     expect(counts.size).toBeGreaterThan(1)
   })
 
   it("produces distinct puzzles across calls", () => {
-    const a = generatePuzzle()
-    const b = generatePuzzle()
+    const a = generatePuzzle(difficulty)
+    const b = generatePuzzle(difficulty)
     expect(a.solution).not.toEqual(b.solution)
   })
 
   it("puzzle is solvable via solve() and matches the generator's solution", () => {
-    const { puzzle, solution } = generatePuzzle()
+    const { puzzle, solution } = generatePuzzle(difficulty)
     const solved = solve(puzzle)
     expect(solved).not.toBeNull()
     expect(solved).toEqual(solution)
+  })
+})
+
+describe("generatePuzzle difficulty ordering", () => {
+  // Sample-based check that the `difficulty` arg actually affects output.
+  // Bands are wide apart (easy ~35–40, hard ~23–27) so the mean gap is robust
+  // well beyond per-call variance across 10 samples.
+  it("easy puzzles have more clues than hard on average", () => {
+    const SAMPLES = 10
+    const easy = Array.from({ length: SAMPLES }, () => popcount(generatePuzzle("easy").puzzle))
+    const hard = Array.from({ length: SAMPLES }, () => popcount(generatePuzzle("hard").puzzle))
+    expect(mean(easy)).toBeGreaterThan(mean(hard) + 5)
+    expect(Math.min(...easy)).toBeGreaterThan(Math.max(...hard))
   })
 })

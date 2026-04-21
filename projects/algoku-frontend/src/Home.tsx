@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useWallet } from "@txnlab/use-wallet-react"
-import { AlertTriangle, Check, CheckCircle2, ExternalLink, RefreshCw, X, XCircle } from "lucide-react"
+import { AlertTriangle, Check, CheckCircle2, ChevronDown, ExternalLink, RefreshCw, X, XCircle } from "lucide-react"
 import { useSnackbar } from "notistack"
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react"
 
@@ -9,13 +9,21 @@ import NumberPad from "@/components/NumberPad"
 import { SiteHeader } from "@/components/site-header"
 import SudokuBoard from "@/components/SudokuBoard"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Spinner } from "@/components/ui/spinner"
 import { type MintState, useAlgoku } from "@/hooks/useAlgoku"
 import { useSudokuState } from "@/hooks/useSudokuState"
 import { type PendingMint, readPendingMint, subscribePendingMint } from "@/lib/pendingMint"
 import { ASSETS_QUERY_KEY } from "@/lib/queryClient"
-import { findConflicts, generatePuzzle, solve } from "@/lib/sudoku"
+import { type Difficulty, findConflicts, generatePuzzle, solve } from "@/lib/sudoku"
 import { cn } from "@/lib/utils"
 import { loraAssetUrl, loraTxUrl } from "@/utils/lora"
 
@@ -30,9 +38,10 @@ const Home = () => {
   const queryClient = useQueryClient()
   const [conflicts, setConflicts] = useState<ReadonlySet<number>>(() => new Set())
   const [checkPassed, setCheckPassed] = useState(false)
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy")
 
   const { givens, entries, selectedIndex, isFull, loadPuzzle, setSelected, moveSelection, setCell, clearEntries, fillEntries, toSolution } =
-    useSudokuState(generatePuzzle().puzzle)
+    useSudokuState(generatePuzzle("easy").puzzle)
 
   const { state, mintAndClaim, retryClaim, resumeFromPending, dismiss, busy, phase } = useAlgoku()
 
@@ -84,8 +93,8 @@ const Home = () => {
     setConflicts(new Set())
     setCheckPassed(false)
     dismissIfTerminal()
-    loadPuzzle(generatePuzzle().puzzle)
-  }, [dismissIfTerminal, loadPuzzle])
+    loadPuzzle(generatePuzzle(difficulty).puzzle)
+  }, [difficulty, dismissIfTerminal, loadPuzzle])
 
   const handleReset = useCallback(() => {
     setConflicts(new Set())
@@ -188,9 +197,24 @@ const Home = () => {
           <NumberPad onPress={handleNumberPress} disabled={!selectedIsEditable} />
 
           <div className="flex w-full gap-2">
-            <Button variant="outline" onClick={handleNewPuzzle} disabled={busy} className="flex-1">
-              new puzzle
-            </Button>
+            <ButtonGroup className="grow basis-9">
+              <Button variant="outline" onClick={handleNewPuzzle} disabled={busy} className="flex-1">
+                new puzzle
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={busy} aria-label="choose difficulty" className="pl-2!">
+                    <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuRadioGroup value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
+                    <DropdownMenuRadioItem value="easy">easy</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="hard">hard</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </ButtonGroup>
             <Button variant="outline" onClick={handleReset} disabled={busy} className="flex-1">
               reset
             </Button>
