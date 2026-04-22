@@ -1,47 +1,42 @@
 name: Validate algoku-frontend
 
 on:
-  
   workflow_call:
-  
+
+permissions:
+  contents: read
 
 jobs:
-  validate:
-    runs-on: 'ubuntu-latest'
+  ci:
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install poetry
-        run: pipx install poetry
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "poetry"
-
-      - name: Install algokit
-        run: pipx install algokit
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "./projects/algoku-frontend/package-lock.json"
 
       - name: Install dependencies
-        run: algokit project bootstrap all --project-name 'algoku-frontend'
+        working-directory: ./projects/algoku-frontend
+        run: npm ci
 
-      
-      - name: Run linters
-        run: algokit project run lint --project-name 'algoku-frontend'
-      
-      
-      - name: Run unit tests
-        run: algokit project run test --project-name 'algoku-frontend'
-      
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('projects/algoku-frontend/package-lock.json') }}
 
-      - name: Build
-        run: algokit project run build --project-name 'algoku-frontend'
+      - name: Install Playwright browsers and dependencies
+        working-directory: ./projects/algoku-frontend
+        run: npx playwright install --with-deps
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Run CI
+        run: just ci

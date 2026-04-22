@@ -4,11 +4,26 @@ on: [pull_request]
 
 
 jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      contracts: ${{ steps.filter.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            contracts:
+              - 'algoku-contracts/**'
+
   algoku-contracts-ci:
     name: Run algoku-contracts validation
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
     uses: ./.github/workflows/algoku-contracts-ci.yaml
 
   algoku-frontend-ci:
     name: Run algoku-frontend validation
     uses: ./.github/workflows/algoku-frontend-ci.yaml
-

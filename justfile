@@ -38,7 +38,10 @@ coverage:
     npm run coverage
 
 e2e filter="":
-    npm run playwright:test -- --grep="{{filter}}"
+    npm run e2e-test -- --grep="{{filter}}"
+
+e2e-show filter="":
+    npm run e2e-show -- --grep="{{filter}}"
 
 test:
     just unit && just e2e

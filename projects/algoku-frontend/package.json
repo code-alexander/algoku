@@ -20,7 +20,8 @@
     "format-check": "oxfmt --check .",
     "unit-test": "vitest run",
     "coverage": "vitest run --coverage",
-    "playwright:test": "playwright test",
+    "e2e-test": "playwright test",
+    "e2e-show": "playwright test --headed",
     "preview": "vite preview"
   },
   "dependencies": {
