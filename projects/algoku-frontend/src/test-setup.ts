@@ -1,3 +1,9 @@
+import { webcrypto } from "node:crypto"
+
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true })
+}
+
 // Node 22+ ships an experimental Web Storage implementation that can shadow
 // jsdom's `window.localStorage` with a stub whose methods are undefined
 // (triggered by an internal `--localstorage-file` flag with no path). When
