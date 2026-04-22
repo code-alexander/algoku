@@ -24,9 +24,7 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 async function solutionHashHex(solution: Uint8Array): Promise<string> {
-  const ab = new ArrayBuffer(solution.byteLength)
-  new Uint8Array(ab).set(solution)
-  const buf = await crypto.subtle.digest("SHA-256", ab)
+  const buf = await crypto.subtle.digest("SHA-256", new Uint8Array(solution))
   return bytesToHex(new Uint8Array(buf))
 }
 
